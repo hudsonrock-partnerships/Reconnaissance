@@ -6,6 +6,7 @@ import subprocess
 import socket
 import sys
 import logging
+import time
 from datetime import datetime
 
 # Constants
@@ -29,11 +30,13 @@ def target(target):
     if not target:
         print(f"{RED}[!] No input provided. {NORMAL}")
         return None
+    
     # Check if target is a file containing a list of assets
     if os.path.isfile(target):
         with open(target, 'r') as file:
             targets = [line.strip() for line in file if line.strip()]
         return targets
+    
     # Check if target is a valid IP address
     try:
         ip_obj = ipaddress.ip_address(target)
@@ -41,6 +44,15 @@ def target(target):
         return ip_obj
     except ValueError:
         pass
+    
+    # Check if target is a valid subnet
+    try:
+        subnet_obj = ipaddress.ip_network(target, strict=False)
+        print(f"{GREEN}[+] Valid Subnet: {target}{NORMAL}")
+        return subnet_obj
+    except ValueError:
+        pass
+    
     # Check if target is a valid domain name or URL
     try:
         resolved_ip = socket.gethostbyname(target)
@@ -82,17 +94,17 @@ def passive_recon(target):
     run_command(['nslookup', target], master_file)
     run_command(['nslookup', '-type=TXT', target], master_file)
     run_command(['dnsrecon', '-d', target], master_file)
-    run_command(['sudo','dnsenum', target], master_file)
-    run_command(['python3', 'dnsdumpster.py', '-d', target], master_file)
+    run_command(['dnsenum', '--enum', target], master_file, timeout=20)
+    run_command(['sublist3r', '-d', target], master_file)
+    run_command(['cloud_enum', '-k', target], master_file, timeout=20)
+    #run_command(['python3', 'dnsdumpster.py', '-d', target], master_file)
     run_command(['mailspoof', '-d', target], master_file)
     run_command(['whatweb', target], master_file)
     run_command(['sslscan', '-t', target], master_file)
     run_command(['shcheck.py', f'https://{target}', '-i', '-x'], master_file)
-    run_command(['python3', 'cmseek.py', '-u', target, '--follow-redirect'], master_file)
-    run_command(['theHarvester', '-d', target, '-b', 'all', '-l', '500'], master_file)
-    run_command(['python3', 'cloud_enum.py', '-k', target], master_file)
-    run_command(['sublist3r', '-d', target], master_file)
-
+    run_command(['cmseek.py', '-v', '-u', target, '--follow-redirect'], master_file)
+    run_command(['sudo', 'theHarvester', '-d', target, '-b', 'all', '-l', '500'], master_file)
+    
 ############### ACTIVE RECON #################
 def active_recon(target):
     print(f"\n{BOLD}{GREEN}[*] STARTING ACTIVE RECON{NORMAL}\n")
@@ -111,10 +123,10 @@ def web_recon(target):
     print(f"{BOLD}{GREEN}[*] TARGET:{YELLOW} {target} {NORMAL}\n")
     master_file = '/opt/tools/Zombz_Recon/web_recon_output.txt'
         
-    run_command(['cat', target, '|', 'hakrawler'], master_file, shell=True)
-    run_command(['gau', target], master_file)
-    run_command(['arjun', '-u', target, '-oT'], master_file)
-    run_command(['dirsearch', '-u', target, '--deep-recursive', '--random-agent', '--exclude-status', '404,403,401,503', '-w', '/usr/share/seclists/Discovery/Web-Content/dirsearch.txt', '-o'], master_file)
+    #run_command(['hakrawler'], master_file, shell=True)
+    #run_command(['gau', target], master_file)
+    run_command(['sudo', 'arjun', '-u', target], master_file)
+    run_command(['dirsearch', '-u', target], master_file)
     run_command(['nuclei', '-u', target, '-t', '/usr/share/nuclei-templates/', '-severity', 'low,medium,high,critical', '-silent', '-o'], master_file)
 
 ################ FULL RECON ##################
