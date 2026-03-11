@@ -82,3 +82,5 @@
   yahoo: Yahoo search engine 
   
   zoomeye: China's version of Shodan (Requires an API key, see below.) - https://www.zoomeye.org 
+
+  hudsonrock: Infostealer intelligence toolset (free) - https://www.hudsonrock.com/threat-intelligence-cybercrime-tools  
